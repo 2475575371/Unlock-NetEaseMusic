@@ -3,32 +3,37 @@ permissions:
   contents: read
 on:
   schedule:
-    # * is a special character in YAML so you have to quote this string
-    - cron:  '37 2 * * *'
+    - cron: '37 2 * * *'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Install python packages
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Login and unlock
-      env:
-        CONFIG: ${{secrets.CONFIG}}
-        PYTHONIOENCODING: utf-8
-        PYTHONLEGACYWINDOWSSTDIO: utf-8
-      run: python auto_login.py
-      continue-on-error: false
-    
-    - name: Check Failure
-      if: failure()  # check if the previous job is failed
-      run: |
-        echo "The auto login script failed. Check logs for details."
-        exit 1
+      # 🚀 新增步骤，将 CONFIG Secret 写入 config.json
+      - name: Create config.json from CONFIG secret
+        run: |
+          echo "${{ secrets.CONFIG }}" > config.json
+          echo "✅ config.json created"
+      
+      - name: Login and unlock
+        env:
+          CONFIG: ${{ secrets.CONFIG }}
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYWINDOWSSTDIO: utf-8
+        run: python auto_login.py
+        continue-on-error: false
+      
+      - name: Check Failure
+        if: failure()
+        run: |
+          echo "The auto login script failed. Check logs for details."
+          exit 1
